@@ -138,11 +138,79 @@ def getandupdateNAV():
     db.commit()
     db.close()
     return
-getandupdateNAV()
+
 #inputfunddetails()
 #inputfoliodetails()
 #inputtransactions()
 
-str1 = "22-May-1980"
-date1 = datetime.datetime.strptime(str1, "%d-%b-%Y").strftime("%Y/%m/%d")
-print(date1)
+
+
+class Scheme:
+    def __init__(self, scheme_code, folio_num, portfolio_name, ownedBy, scheme_name, scheme_house, scheme_type_pri, scheme_type_sec, scheme_ISIN):
+        self.scheme_code = scheme_code
+        self.folio_num = folio_num
+        self.portfolio_name = portfolio_name
+        self.ownedBy = ownedBy
+        self.scheme_name = scheme_name
+        self.scheme_house = scheme_house
+        self.scheme_type_pri = scheme_type_pri
+        self.scheme_tyoe_sec = scheme_type_sec
+        self.scheme_ISIN = scheme_ISIN
+        self.transactions = [{}]
+        
+    def getTransactions(self):
+        get_trans_query = "Select * from Transactions where schemecode = {0} \
+        and folionumber = {1}".format(self.scheme_code, self.folio_num)
+        cursor.execute (get_trans_query)
+        
+        self.transactions = cursor.fetchall()
+        print ("Printing Transactions...")
+        
+        for transaction in self.transactions:
+            print (transaction)
+        
+    def getSummary(self):
+        amt_invested = 0
+        amt_redeemed = 0
+        units_held = 0
+        nav_query = "Select NAV from nav where schemecode = {0}".format(self.scheme_code)
+        
+        for transaction in self.transactions:
+            if (transaction[3] >0):
+                amt_invested += transaction[3]
+            else:
+                amt_redeemed += transaction[3]
+            units_held += transaction[5]
+            
+        cursor.execute(nav_query)
+        nav = cursor.fetchone()[0]
+        print ("Amount Invested:" + str(amt_invested))
+        print ("Amount Redeemed:" + str(amt_redeemed))
+        print ("Units Held:" + str(units_held))
+        print ("NAV:" + str(nav))
+        print ("Valuation:" + str(float(units_held) * float (nav)))
+
+#getandupdateNAV() 
+db = pymysql.connect("localhost","root","MS@1234","mydb" )
+
+cursor = db.cursor()
+    
+schemecodes_query = "Select * from foliodetails, funddetails where \
+foliodetails.schemecode = funddetails.schemecode"
+cursor.execute (schemecodes_query)
+    
+rows = cursor.fetchall()
+    
+print (rows[0])
+
+scheme_details = rows[0]
+print (type(scheme_details))
+scheme = Scheme(scheme_details[1], scheme_details[0], scheme_details[2], \
+                scheme_details[3], scheme_details[8], scheme_details[9], \
+                scheme_details[4], scheme_details[5], scheme_details[7])
+
+scheme.getTransactions()
+scheme.getSummary()
+
+
+      
